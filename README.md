@@ -119,6 +119,9 @@ values you like.
 | Looser / stiffer body | `ActiveRagdoll` → **Joint Spring** |
 | Arms can't lift what they hold | `ActiveRagdollArms` → **Reach Strength** |
 | Don't turn toward the camera while grabbing | `ActiveRagdollLocomotion` → **Face Look While Grabbing** (off) |
+| Arms reach further / less to the side | `ActiveRagdollArms` → **Max Reach Yaw** |
+| Falls harder / softer on `Knockout()` | `ActiveRagdoll` → **Knockout Stumble** |
+| Feet should grip the ground (no sliding) | `ActiveRagdoll` → **Frictionless Legs** (off; the body may lean forward while walking) |
 | Grip breaks too easily | `RagdollHand` on the hand bones → **Break Force** |
 | Camera distance / sensitivity | Main Camera → `RagdollCamera` → **Distance**, **Mouse Sensitivity** |
 | Jitter | **Edit > Project Settings > Time > Fixed Timestep** = `0.01` |
@@ -161,8 +164,13 @@ RagdollBone  (on every bone: Rigidbody + ConfigurableJoint)
   facing the move direction.
 - **Frictionless legs:** leg colliders have no friction, so feet brushing the ground can't hold the
   body back and tip it forward.
+- **Aiming:** `PlayerRagdollInput` casts a ray from the camera through the center of the screen.
+  The arms reach from the chest toward the point it hits.
 - **Knockout:** joint strength drops to zero and the body goes fully limp. When the timer ends,
   strength ramps back up and the balance and hip forces stand the character up again.
+  A knockout happens when the body tips over, or when the head, chest or hips take a hard hit.
+  Hits on the arms and legs don't count, so your own swinging arm can't knock you out.
+  Calling `Knockout()` from code also gives the upper body a small push so it actually falls.
 
 | File | Job |
 |---|---|
@@ -310,6 +318,9 @@ görebilirsin. Play'den çıkınca değişiklikler geri alınır; beğendiğin d
 | Daha gevşek / daha sert gövde | `ActiveRagdoll` → **Joint Spring** |
 | Kollar tuttuğunu kaldıramıyor | `ActiveRagdollArms` → **Reach Strength** |
 | Tutarken kameraya dönmesin | `ActiveRagdollLocomotion` → **Face Look While Grabbing** (kapat) |
+| Kollar yana daha çok / az uzansın | `ActiveRagdollArms` → **Max Reach Yaw** |
+| `Knockout()` ile daha sert / yumuşak düşsün | `ActiveRagdoll` → **Knockout Stumble** |
+| Ayaklar yere tutunsun (kaymasın) | `ActiveRagdoll` → **Frictionless Legs** (kapat; yürürken gövde öne eğilebilir) |
 | Tutuş çok kolay kopuyor | El kemiklerindeki `RagdollHand` → **Break Force** |
 | Kamera uzaklığı / hassasiyeti | Main Camera → `RagdollCamera` → **Distance**, **Mouse Sensitivity** |
 | Titreme | **Edit > Project Settings > Time > Fixed Timestep** = `0.01` |
@@ -335,8 +346,13 @@ Mimari şeması ve dosya listesi için yukarıdaki [How it works](#how-it-works)
   (PD kontrolcü).
 - **Sürtünmesiz bacaklar:** Bacak collider'larında sürtünme yoktur. Böylece yere değen ayaklar
   gövdeyi geride tutup öne devirmez.
+- **Nişan alma:** `PlayerRagdollInput` kameradan ekranın ortasına doğru bir ışın atar. Kollar
+  göğüsten, ışının çarptığı noktaya uzanır.
 - **Bayılma:** Joint gücü sıfıra iner, karakter tam ragdoll olur. Süre bitince güç yavaşça geri
-  gelir, denge ve kalça yayı karakteri ayağa kaldırır.
+  gelir, denge ve kalça yayı karakteri ayağa kaldırır. Karakter devrilince ya da kafa, gövde veya
+  kalçaya sert bir darbe gelince bayılır. Kol ve bacak çarpmaları sayılmaz; yani kendi savrulan
+  kolun seni bayıltamaz. Koddan `Knockout()` çağrılınca üst gövdeye küçük bir itme de verilir,
+  böylece karakter gerçekten yere düşer.
 
 Koddan kontrol etmek istersen (`PlayerRagdollInput` yerine):
 
