@@ -30,8 +30,8 @@ namespace Atthree.Ragdoll
         [Range(0f, 1f)] public float limpStrength = 0.03f;
 
         [Header("Denge (dik durma torku)")]
-        public float balanceSpring = 600f;
-        public float balanceDamper = 50f;
+        public float balanceSpring = 1000f;
+        public float balanceDamper = 60f;
         [Tooltip("Göğsün denge torku kalçaya göre oranı.")]
         [Range(0f, 1f)] public float chestBalanceRatio = 1f;
 

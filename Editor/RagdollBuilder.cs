@@ -171,30 +171,46 @@ namespace Atthree.Ragdoll.Editor
             }
 
             // ---- 2) Collider'lar ----
-            // Kalça: kalça kemiğinin biraz altından göğse kadar kutu.
+            // Önce mesh'in vertex'lerinden ölçü almayı dener (SkinMeasure); mesh yoksa
+            // kemik mesafelerinden tahmin eder.
+            var skin = new SkinMeasure(root, map);
+
+            // Kalça: mesh'teki kalça bölgesi, yoksa kalçanın biraz altından göğse kadar kutu.
+            if (!skin.TryBox(map[BodyPart.Hips], r.rotation, out Vector3 hipsCenter, out Vector3 hipsSize))
             {
                 float bottom = Vector3.Dot(P(BodyPart.Hips), up) - hipWidth * 0.4f;
                 float top = Vector3.Dot(P(BodyPart.Chest), up);
-                Vector3 center = P(BodyPart.Hips) + up * ((bottom + top) * 0.5f - Vector3.Dot(P(BodyPart.Hips), up));
-                AddBox(map[BodyPart.Hips], center, r.rotation, new Vector3(hipWidth * 1.9f, top - bottom, hipWidth * 1.2f));
+                hipsCenter = P(BodyPart.Hips) + up * ((bottom + top) * 0.5f - Vector3.Dot(P(BodyPart.Hips), up));
+                hipsSize = new Vector3(hipWidth * 1.9f, top - bottom, hipWidth * 1.2f);
             }
-            // Göğüs: göğüs kemiğinden boyuna kutu.
+            AddBox(map[BodyPart.Hips], hipsCenter, r.rotation, hipsSize);
+
+            // Göğüs.
+            if (!skin.TryBox(map[BodyPart.Chest], r.rotation, out Vector3 chestCenter, out Vector3 chestSize))
             {
                 float height = Mathf.Max(Vector3.Dot(neckPos - P(BodyPart.Chest), up), hipWidth);
-                Vector3 center = P(BodyPart.Chest) + up * height * 0.5f;
-                AddBox(map[BodyPart.Chest], center, r.rotation, new Vector3(shoulderWidth * 0.8f, height, hipWidth * 1.4f));
+                chestCenter = P(BodyPart.Chest) + up * height * 0.5f;
+                chestSize = new Vector3(shoulderWidth * 0.8f, height, hipWidth * 1.4f);
             }
+            AddBox(map[BodyPart.Chest], chestCenter, r.rotation, chestSize);
+
             // Kafa: küre.
+            if (skin.TryBox(map[BodyPart.Head], r.rotation, out Vector3 headCenter, out Vector3 headSize))
+            {
+                AddSphere(map[BodyPart.Head], headCenter, (headSize.x + headSize.y + headSize.z) / 6f);
+            }
+            else
             {
                 float radius = Mathf.Max(Vector3.Distance(neckPos, P(BodyPart.Head)) * 1.1f, shoulderWidth * 0.28f);
                 AddSphere(map[BodyPart.Head], P(BodyPart.Head) + up * radius * 0.8f, radius);
             }
+
             // Bacaklar: kapsül + ayak kutusu (yere basan kısım).
-            AddLeg(map, BodyPart.LeftUpperLeg, BodyPart.LeftLowerLeg, leftFoot, hipWidth, floorY, up, forward, r.rotation);
-            AddLeg(map, BodyPart.RightUpperLeg, BodyPart.RightLowerLeg, rightFoot, hipWidth, floorY, up, forward, r.rotation);
+            AddLeg(map, skin, BodyPart.LeftUpperLeg, BodyPart.LeftLowerLeg, map.leftFoot, leftFoot, hipWidth, floorY, up, forward, r.rotation);
+            AddLeg(map, skin, BodyPart.RightUpperLeg, BodyPart.RightLowerLeg, map.rightFoot, rightFoot, hipWidth, floorY, up, forward, r.rotation);
             // Kollar.
-            AddArm(map, BodyPart.LeftUpperArm, BodyPart.LeftLowerArm, BodyPart.LeftHand, map.leftFinger);
-            AddArm(map, BodyPart.RightUpperArm, BodyPart.RightLowerArm, BodyPart.RightHand, map.rightFinger);
+            AddArm(map, skin, BodyPart.LeftUpperArm, BodyPart.LeftLowerArm, BodyPart.LeftHand, map.leftFinger, r.rotation);
+            AddArm(map, skin, BodyPart.RightUpperArm, BodyPart.RightLowerArm, BodyPart.RightHand, map.rightFinger, r.rotation);
 
             // ---- 3) Joint'ler ----
             //          parça                        eksen  ikincil   lowX  highX   Y    Z
@@ -243,25 +259,34 @@ namespace Atthree.Ragdoll.Editor
         }
 
         // ---------------------------------------------------------------- collider yardımcıları
-        static void AddLeg(BoneMap map, BodyPart upperPart, BodyPart lowerPart, Vector3 foot,
-            float hipWidth, float floorY, Vector3 up, Vector3 forward, Quaternion rootRotation)
+        static void AddLeg(BoneMap map, SkinMeasure skin, BodyPart upperPart, BodyPart lowerPart, Transform footBone,
+            Vector3 foot, float hipWidth, float floorY, Vector3 up, Vector3 forward, Quaternion rootRotation)
         {
             Transform upper = map[upperPart], lower = map[lowerPart];
-            AddCapsule(upper, upper.position, lower.position, hipWidth * 0.45f);
-            AddCapsule(lower, lower.position, foot, hipWidth * 0.35f);
+            AddCapsule(upper, upper.position, lower.position,
+                skin.CapsuleRadius(upper, upper.position, lower.position, hipWidth * 0.45f));
+            AddCapsule(lower, lower.position, foot,
+                skin.CapsuleRadius(lower, lower.position, foot, hipWidth * 0.35f));
 
-            // Ayak: ayak bileğinden yere kadar, öne uzanan kutu.
+            // Ayak: mesh'ten ölç, yoksa ayak bileğinden yere kadar öne uzanan kutu.
+            if (footBone != null && skin.TryBox(footBone, rootRotation, out Vector3 center, out Vector3 size))
+            {
+                AddBox(lower, center, rootRotation, size);
+                return;
+            }
             float ankleHeight = Mathf.Max(Vector3.Dot(foot, up) - floorY, hipWidth * 0.3f);
             float length = hipWidth * 1.3f;
-            Vector3 center = foot - up * (ankleHeight * 0.5f) + forward * (length * 0.25f);
+            center = foot - up * (ankleHeight * 0.5f) + forward * (length * 0.25f);
             AddBox(lower, center, rootRotation, new Vector3(hipWidth * 0.55f, ankleHeight, length));
         }
 
-        static void AddArm(BoneMap map, BodyPart upperPart, BodyPart lowerPart, BodyPart handPart, Transform finger)
+        static void AddArm(BoneMap map, SkinMeasure skin, BodyPart upperPart, BodyPart lowerPart, BodyPart handPart,
+            Transform finger, Quaternion rootRotation)
         {
             Transform upper = map[upperPart], lower = map[lowerPart], hand = map[handPart];
             float upperLength = Vector3.Distance(upper.position, lower.position);
-            AddCapsule(upper, upper.position, lower.position, upperLength * 0.22f);
+            AddCapsule(upper, upper.position, lower.position,
+                skin.CapsuleRadius(upper, upper.position, lower.position, upperLength * 0.22f));
 
             if (hand == null)
             {
@@ -270,7 +295,14 @@ namespace Atthree.Ragdoll.Editor
                 return;
             }
 
-            AddCapsule(lower, lower.position, hand.position, upperLength * 0.2f);
+            AddCapsule(lower, lower.position, hand.position,
+                skin.CapsuleRadius(lower, lower.position, hand.position, upperLength * 0.2f));
+
+            if (skin.TryBox(hand, rootRotation, out Vector3 handCenter, out Vector3 handSize))
+            {
+                AddSphere(hand, handCenter, (handSize.x + handSize.y + handSize.z) / 6f);
+                return;
+            }
             Vector3 handDirection = (hand.position - lower.position).normalized;
             Vector3 tip = finger != null ? finger.position : hand.position + handDirection * upperLength * 0.3f;
             float radius = Mathf.Max(Vector3.Distance(hand.position, tip) * 0.6f, upperLength * 0.15f);
