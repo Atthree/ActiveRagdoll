@@ -1,6 +1,6 @@
 {
   "name": "com.atthree.active-ragdoll",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "displayName": "Active Ragdoll",
   "description": "Physics-driven active ragdoll character controller (Gang Beasts / Human Fall Flat style). ConfigurableJoint based, works with any Humanoid rig. Includes an editor builder, procedural walking, jumping, grabbing, knockout/recovery and an orbit camera.",
   "unity": "6000.0",

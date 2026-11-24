@@ -44,6 +44,9 @@ namespace Atthree.Ragdoll
         public float groundTolerance = 0.35f;
         public float groundCheckRadius = 0.12f;
         public LayerMask groundMask = ~0;
+        [Tooltip("Bacak collider'ları sürtünmesiz olsun. Yürürken yere değen ayaklar gövdeyi " +
+                 "geride tutup öne devirmesin diye (karakteri zaten kalça yayı taşıyor).")]
+        public bool frictionlessLegs = true;
 
         [Header("Bayılma")]
         public bool autoKnockout = true;
@@ -55,6 +58,9 @@ namespace Atthree.Ragdoll
         public float knockoutDuration = 2f;
         [Tooltip("Gücün 0'dan 1'e dönme süresi.")]
         public float recoveryDuration = 1.2f;
+        [Tooltip("Knockout() kodla çağrılınca üst gövdeye verilen sendeleme hızı (m/s). " +
+                 "Bu olmadan dengede duran karakter gevşese bile yığılmayabilir.")]
+        public float knockoutStumble = 1.5f;
 
         [Header("Komutlar (giriş scripti doldurur)")]
         public RagdollCommands commands = new RagdollCommands();
@@ -123,6 +129,8 @@ namespace Atthree.Ragdoll
             for (int i = 0; i < list.Count; i++)
                 for (int j = i + 1; j < list.Count; j++)
                     Physics.IgnoreCollision(list[i], list[j], true);
+
+            if (frictionlessLegs) ApplyFrictionlessLegs();
 
             // Ayakta durma yüksekliği: kalçanın, köke (ayak tabanı) olan dikey mesafesi.
             StandHeight = Vector3.Dot(Hips.transform.position - transform.position, Vector3.up) + standHeightOffset;
@@ -254,14 +262,33 @@ namespace Atthree.Ragdoll
             if (tiltTimer > knockoutTiltTime) Knockout(knockoutDuration);
         }
 
-        /// <summary>Karakteri belirtilen süre boyunca tam ragdoll yapar.</summary>
+        /// <summary>
+        /// Karakteri belirtilen süre boyunca tam ragdoll yapar.
+        /// Üst gövdeye rastgele yatay yönde <see cref="knockoutStumble"/> hızında sendeleme verir.
+        /// </summary>
         public void Knockout(float duration)
+        {
+            Vector2 dir = UnityEngine.Random.insideUnitCircle.normalized;
+            Knockout(duration, new Vector3(dir.x, 0f, dir.y) * knockoutStumble);
+        }
+
+        /// <summary>Bayıltır ve üst gövdeye verilen hız kadar itme uygular (Vector3.zero = itme yok).</summary>
+        public void Knockout(float duration, Vector3 push)
         {
             bool wasStanding = !IsKnockedOut;
             knockoutTimer = Mathf.Max(knockoutTimer, duration);
             Strength = 0f;
             tiltTimer = 0f;
-            if (wasStanding) Knocked?.Invoke();
+            if (!wasStanding) return;
+
+            if (push != Vector3.zero)
+            {
+                // Sadece üst gövde itilir: ayaklar yerinde kalır, karakter devrilir.
+                if (Chest != null) Chest.Body.AddForce(push, ForceMode.VelocityChange);
+                var head = Get(BodyPart.Head);
+                if (head != null) head.Body.AddForce(push, ForceMode.VelocityChange);
+            }
+            Knocked?.Invoke();
         }
 
         /// <summary>RagdollBone çarpışmaları buraya iletir.</summary>
@@ -269,8 +296,26 @@ namespace Atthree.Ragdoll
         {
             if (!autoKnockout || IsKnockedOut) return;
             if (ownColliders.Contains(collision.collider)) return;
+            // Çarpışmanın kendisi zaten momentum veriyor; ekstra itme yok.
             if (collision.relativeVelocity.magnitude > knockoutImpactSpeed)
-                Knockout(knockoutDuration);
+                Knockout(knockoutDuration, Vector3.zero);
+        }
+
+        void ApplyFrictionlessLegs()
+        {
+            var material = new PhysicsMaterial("RagdollLegs")
+            {
+                dynamicFriction = 0f,
+                staticFriction = 0f,
+                frictionCombine = PhysicsMaterialCombine.Minimum,
+            };
+            foreach (var part in new[] { BodyPart.LeftUpperLeg, BodyPart.LeftLowerLeg, BodyPart.RightUpperLeg, BodyPart.RightLowerLeg })
+            {
+                var bone = Get(part);
+                if (bone == null) continue;
+                foreach (var c in bone.GetComponentsInChildren<Collider>())
+                    if (c.attachedRigidbody == bone.Body) c.sharedMaterial = material;
+            }
         }
 
         // ---- Diğer scriptler için yardımcılar ----------------------------------
