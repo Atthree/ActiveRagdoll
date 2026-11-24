@@ -37,7 +37,7 @@ keep it upright, it falls over when something hits it, and it gets back up on it
 The Input System package is installed automatically if it's missing. If Unity asks
 *"Enable the new input backends?"*, click **Yes**; the Editor restarts.
 
-> To lock a specific version, add a tag to the URL: `…/ActiveRagdoll.git#v0.1.1`
+> To lock a specific version, add a tag to the URL: `…/ActiveRagdoll.git#v0.2.0`
 
 ### 2. Prepare the scene
 
@@ -76,12 +76,32 @@ Press **Play**.
 |---|---|---|
 | W A S D | Left stick | Walk (relative to the camera) |
 | Space | A | Jump |
-| Left click (hold) | Left trigger | Reach with the left arm, grab what it touches |
-| Right click (hold) | Right trigger | Reach with the right arm, grab what it touches |
+| Left click (hold) | Left trigger | Raise the left arm toward where the camera points, grab what it touches |
+| Right click (hold) | Right trigger | Same with the right arm |
 | Mouse | Right stick | Rotate the camera |
 | Esc | – | Release the cursor (click the game view to lock it again) |
 
+While a grab button is held, the character turns to face the camera direction, so you can aim with
+the mouse: look up and the arms go up, look down and they reach down. The arms point at whatever is
+in the center of the screen.
+
 To try grabbing, add a few cubes to the scene and give them a **Rigidbody**.
+
+## Using your own character
+
+The builder works with **any Humanoid character**, not only Buddy (tested with Synty POLYGON
+characters too). It is not added automatically: you run the builder once per character.
+
+1. Select your model file in the Project window. In the Inspector go to **Rig**, set
+   **Animation Type** to **Humanoid**, and click **Apply**.
+2. Drag the character into the scene: upright, feet on the floor, Rotation `0, 0, 0`.
+3. **Tools > Active Ragdoll > Builder** → drag the character into the field → **Build**.
+4. Optional: drag the character from the Hierarchy into the Project window to save it as a prefab.
+   The prefab keeps the ragdoll setup, so you can reuse it in other scenes without building again.
+
+The builder finds the bones from the Humanoid avatar (or by common bone names such as
+`Hips`, `UpperLeg_L`, `LeftUpLeg`) and measures the collider sizes from the mesh. If a character
+looks too stiff or too floppy, see [Tuning](#tuning).
 
 ## Tuning
 
@@ -98,6 +118,7 @@ values you like.
 | Gets knocked out too easily | `ActiveRagdoll` → **Knockout Impact Speed** (raise it) or turn off **Auto Knockout** |
 | Looser / stiffer body | `ActiveRagdoll` → **Joint Spring** |
 | Arms can't lift what they hold | `ActiveRagdollArms` → **Reach Strength** |
+| Don't turn toward the camera while grabbing | `ActiveRagdollLocomotion` → **Face Look While Grabbing** (off) |
 | Grip breaks too easily | `RagdollHand` on the hand bones → **Break Force** |
 | Camera distance / sensitivity | Main Camera → `RagdollCamera` → **Distance**, **Mouse Sensitivity** |
 | Jitter | **Edit > Project Settings > Time > Fixed Timestep** = `0.01` |
@@ -209,7 +230,7 @@ denge kuvvetleri onu ayakta tutar, bir şey çarpınca devrilir ve kendi kendine
 Input System paketi yoksa otomatik kurulur. Unity *"Enable the new input backends?"* diye sorarsa
 **Yes** de; editör yeniden başlar.
 
-> Belirli bir sürümü kullanmak için adresin sonuna etiket ekle: `…/ActiveRagdoll.git#v0.1.1`
+> Belirli bir sürümü kullanmak için adresin sonuna etiket ekle: `…/ActiveRagdoll.git#v0.2.0`
 
 ### 2. Sahneyi hazırla
 
@@ -247,12 +268,32 @@ Hepsi **Ctrl+Z** ile geri alınabilir. Kurulumu silmek için pencerede **Remove*
 |---|---|---|
 | W A S D | Sol stick | Yürü (kameranın baktığı yöne göre) |
 | Space | A | Zıpla |
-| Sol tık (basılı tut) | Sol tetik | Sol kolu uzat, değdiğini tut |
-| Sağ tık (basılı tut) | Sağ tetik | Sağ kolu uzat, değdiğini tut |
+| Sol tık (basılı tut) | Sol tetik | Sol kolu kameranın baktığı yere kaldır, değdiğini tut |
+| Sağ tık (basılı tut) | Sağ tetik | Aynısı sağ kolla |
 | Fare | Sağ stick | Kamerayı döndür |
 | Esc | – | İmleci serbest bırak (oyun ekranına tıklayınca geri kilitlenir) |
 
+Tutma tuşu basılıyken karakter kameranın baktığı yöne döner, yani fareyle nişan alırsın:
+yukarı bakınca kollar yukarı kalkar, aşağı bakınca aşağı uzanır. Kollar ekranın ortasındaki
+noktaya uzanır.
+
 Tutmayı denemek için sahneye birkaç küp koy ve onlara **Rigidbody** ekle.
+
+## Kendi karakterini kullanmak
+
+Builder sadece Buddy ile değil, **herhangi bir Humanoid karakterle** çalışır (Synty POLYGON
+karakterleriyle de test edildi). Otomatik eklenmez: her karakter için Builder'ı bir kez çalıştırırsın.
+
+1. Project penceresinde model dosyanı seç. Inspector'da **Rig** sekmesine git, **Animation Type**'ı
+   **Humanoid** yap ve **Apply**'a bas.
+2. Karakteri sahneye sürükle: dik, ayakları zeminde, Rotation `0, 0, 0`.
+3. **Tools > Active Ragdoll > Builder** → karakteri alana sürükle → **Build**.
+4. İsteğe bağlı: Karakteri Hierarchy'den Project penceresine sürükleyip prefab yap. Prefab ragdoll
+   kurulumunu saklar; başka sahnelerde tekrar Build gerekmez.
+
+Builder kemikleri Humanoid avatar'dan (ya da `Hips`, `UpperLeg_L`, `LeftUpLeg` gibi yaygın
+isimlerden) bulur ve collider boyutlarını mesh'ten ölçer. Karakter fazla sert ya da fazla gevşek
+görünürse [Ayarlar](#ayarlar) bölümüne bak.
 
 ## Ayarlar
 
@@ -268,6 +309,7 @@ görebilirsin. Play'den çıkınca değişiklikler geri alınır; beğendiğin d
 | Çok kolay bayılıyor | `ActiveRagdoll` → **Knockout Impact Speed** (artır) veya **Auto Knockout** kapat |
 | Daha gevşek / daha sert gövde | `ActiveRagdoll` → **Joint Spring** |
 | Kollar tuttuğunu kaldıramıyor | `ActiveRagdollArms` → **Reach Strength** |
+| Tutarken kameraya dönmesin | `ActiveRagdollLocomotion` → **Face Look While Grabbing** (kapat) |
 | Tutuş çok kolay kopuyor | El kemiklerindeki `RagdollHand` → **Break Force** |
 | Kamera uzaklığı / hassasiyeti | Main Camera → `RagdollCamera` → **Distance**, **Mouse Sensitivity** |
 | Titreme | **Edit > Project Settings > Time > Fixed Timestep** = `0.01` |

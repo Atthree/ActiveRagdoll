@@ -19,6 +19,8 @@ namespace Atthree.Ragdoll
         public float maxAcceleration = 25f;
         [Range(0f, 1f)] public float airControl = 0.3f;
         public float turnSpeed = 540f;
+        [Tooltip("Tutma tuşu basılıyken karakter kameranın baktığı yöne döner (yürürken de).")]
+        public bool faceLookWhileGrabbing = true;
 
         [Header("Zıplama")]
         public float jumpSpeed = 5f;
@@ -81,7 +83,11 @@ namespace Atthree.Ragdoll
             input.y = 0f;
             input = Vector3.ClampMagnitude(input, 1f);
 
-            if (input.sqrMagnitude > 0.01f)
+            // Tutma tuşu basılıyken bakış (kamera) yönüne dön, yoksa yürüme yönüne.
+            bool aiming = faceLookWhileGrabbing && (cmd.grabLeft || cmd.grabRight);
+            if (aiming)
+                ragdoll.TurnTowards(cmd.lookDirection, turnSpeed, dt);
+            else if (input.sqrMagnitude > 0.01f)
                 ragdoll.TurnTowards(input, turnSpeed, dt);
 
             Vector3 velocity = ragdoll.Velocity;

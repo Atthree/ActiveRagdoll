@@ -296,6 +296,9 @@ namespace Atthree.Ragdoll
         {
             if (!autoKnockout || IsKnockedOut) return;
             if (ownColliders.Contains(collision.collider)) return;
+            // Sadece kafa / gövde / kalçaya gelen darbeler bayıltır. Kol ve bacaklar sayılmaz:
+            // yoksa hızla savrulan kendi elin bir kutuya çarpınca bayılırdın.
+            if (bone.Part != BodyPart.Head && bone.Part != BodyPart.Chest && bone.Part != BodyPart.Hips) return;
             // Çarpışmanın kendisi zaten momentum veriyor; ekstra itme yok.
             if (collision.relativeVelocity.magnitude > knockoutImpactSpeed)
                 Knockout(knockoutDuration, Vector3.zero);

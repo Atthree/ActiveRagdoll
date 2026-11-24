@@ -26,6 +26,8 @@ namespace Atthree.Ragdoll
         [Tooltip("Bakış yönünün dikey açısı bu aralıkta sınırlanır.")]
         public float minReachPitch = -60f;
         public float maxReachPitch = 80f;
+        [Tooltip("Kolların gövdeye göre en fazla kaç derece yana uzanabileceği.")]
+        public float maxReachYaw = 60f;
 
         ActiveRagdoll ragdoll;
         ActiveRagdollLocomotion locomotion;
@@ -105,7 +107,10 @@ namespace Atthree.Ragdoll
             if (arm.hand != null) arm.hand.SetTargetOffset(Quaternion.identity);
         }
 
-        /// <summary>Bakış yönünü karakter uzayına çevirir ve dikey açısını sınırlar.</summary>
+        /// <summary>
+        /// Bakış yönünü karakter uzayına çevirir; dikey ve yatay açısını sınırlar.
+        /// Karakter dönerken gecikse bile kollar hedefe doğru (en fazla ±maxReachYaw) uzanır.
+        /// </summary>
         Vector3 ReachDirection()
         {
             Vector3 look = Quaternion.Inverse(ragdoll.FacingRotation) * ragdoll.commands.lookDirection;
@@ -114,8 +119,9 @@ namespace Atthree.Ragdoll
 
             float pitch = Mathf.Asin(Mathf.Clamp(look.y, -1f, 1f)) * Mathf.Rad2Deg;
             pitch = Mathf.Clamp(pitch, minReachPitch, maxReachPitch);
-            // Kollar her zaman öne uzansın (arkaya doğru değil).
-            return Quaternion.Euler(-pitch, 0f, 0f) * Vector3.forward;
+            float yaw = Mathf.Atan2(look.x, look.z) * Mathf.Rad2Deg;
+            yaw = Mathf.Clamp(yaw, -maxReachYaw, maxReachYaw); // kollar arkaya uzanmasın
+            return Quaternion.Euler(-pitch, yaw, 0f) * Vector3.forward;
         }
 
         static void SetStrength(Arm arm, float value)

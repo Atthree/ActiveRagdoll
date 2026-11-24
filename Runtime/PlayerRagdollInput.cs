@@ -25,7 +25,13 @@ namespace Atthree.Ragdoll
         public InputAction grabLeft = new InputAction("GrabLeft", InputActionType.Button);
         public InputAction grabRight = new InputAction("GrabRight", InputActionType.Button);
 
+        [Tooltip("Nişan ışınının en uzak mesafesi. Hiçbir şeye çarpmazsa bu uzaklıktaki nokta hedeflenir.")]
+        public float maxAimDistance = 30f;
+        [Tooltip("Kameraya bundan yakın çarpmalar yok sayılır (kamera ile karakter arasındakiler).")]
+        public float minAimDistance = 2f;
+
         ActiveRagdoll ragdoll;
+        readonly RaycastHit[] aimHits = new RaycastHit[16];
 
         // Component eklendiğinde (veya Inspector'da Reset) varsayılan tuşları kur.
         void Reset() => AddDefaultBindings();
@@ -81,11 +87,34 @@ namespace Atthree.Ragdoll
             Vector2 input = move.ReadValue<Vector2>();
             var cmd = ragdoll.commands;
             cmd.move = Vector3.ClampMagnitude(flatForward * input.y + flatRight * input.x, 1f);
-            cmd.lookDirection = forward;
+            cmd.lookDirection = cam != null ? AimDirection(cam) : forward;
             cmd.grabLeft = grabLeft.IsPressed();
             cmd.grabRight = grabRight.IsPressed();
             // Update'te basıldı -> FixedUpdate'te tüketilecek. (false yazmıyoruz, kaybolmasın.)
             if (jump.WasPressedThisFrame()) cmd.jumpRequested = true;
+        }
+
+        /// <summary>
+        /// Ekranın ortasının (kameranın) gösterdiği noktayı bulur ve göğüsten o noktaya olan yönü döndürür.
+        /// Kamera karakterin arkasında olduğu için sadece kamera yönünü kullansaydık kollar
+        /// nişan noktasının biraz yanına/altına uzanırdı.
+        /// </summary>
+        Vector3 AimDirection(Transform cam)
+        {
+            Vector3 aimPoint = cam.position + cam.forward * maxAimDistance;
+            int count = Physics.RaycastNonAlloc(cam.position, cam.forward, aimHits, maxAimDistance, ~0, QueryTriggerInteraction.Ignore);
+            float best = float.MaxValue;
+            for (int i = 0; i < count; i++)
+            {
+                if (ragdoll.IsOwnCollider(aimHits[i].collider)) continue;
+                // Kameranın önünde ama karakterin gerisinde kalan şeyleri (ör. kameraya yakın duvar) atla.
+                if (aimHits[i].distance < minAimDistance) continue;
+                if (aimHits[i].distance < best) { best = aimHits[i].distance; aimPoint = aimHits[i].point; }
+            }
+
+            var chest = ragdoll.Chest != null ? ragdoll.Chest : ragdoll.Hips;
+            Vector3 dir = aimPoint - chest.Body.position;
+            return dir.sqrMagnitude > 0.01f ? dir.normalized : cam.forward;
         }
     }
 }

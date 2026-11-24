@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.0] - 2026-11-24
+- While a grab button is held, the character turns to face the camera direction
+  (`ActiveRagdollLocomotion.faceLookWhileGrabbing`).
+- Arms reach toward the point at the center of the screen (raycast from the camera), up and down,
+  and up to ±60° sideways while the body is still turning (`ActiveRagdollArms.maxReachYaw`).
+- Impact knockouts only count hits on the head, chest and hips. Your own swinging arm hitting a box
+  no longer knocks you out.
+- README: "Using your own character" section.
+
 ## [0.1.1] - 2026-11-24
 - Fixed: the character leaned ~20° forward while walking. Leg colliders are now frictionless
   (`ActiveRagdoll.frictionlessLegs`), so feet brushing the ground no longer drag the body.
