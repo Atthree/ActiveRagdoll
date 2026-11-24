@@ -9,7 +9,25 @@
     "url": "https://github.com/Atthree"
   },
   "license": "MIT",
-  "keywords": ["ragdoll", "active ragdoll", "physics", "character controller"],
+  "keywords": [
+    "unity",
+    "unity3d",
+    "unity6",
+    "upm",
+    "upm-package",
+    "unity-package",
+    "gamedev",
+    "active-ragdoll",
+    "ragdoll",
+    "ragdoll-physics",
+    "physics",
+    "character-controller",
+    "procedural-animation",
+    "configurable-joint",
+    "human-fall-flat",
+    "gang-beasts",
+    "unity-physics"
+  ],
   "dependencies": {
     "com.unity.inputsystem": "1.7.0",
     "com.unity.modules.physics": "1.0.0",
